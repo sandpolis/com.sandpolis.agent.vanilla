@@ -1,0 +1,28 @@
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: "Build on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    steps:
+    - name: Initialize Java
+      uses: actions/setup-java@v1
+      with:
+        java-version: 15
+    - name: Checkout root repository
+      uses: actions/checkout@v2
+      with:
+        repository: sandpolis/sandpolis
+    - name: Checkout submodules
+      run: |
+        git submodule update --init --remote --merge com.sandpolis.agent.vanilla
+    - name: Execute build
+      run: |
+        gradle --no-daemon :com.sandpolis.agent.vanilla:build

@@ -1,0 +1,28 @@
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  publish:
+    name: Publish release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+    - name: Initialize Java
+      uses: actions/setup-java@v1
+      with:
+        java-version: 15
+    - name: Checkout root repository
+      uses: actions/checkout@v2
+      with:
+        repository: sandpolis/sandpolis
+    - name: Checkout submodules
+      run: |
+        git submodule update --init --remote --merge com.sandpolis.agent.vanilla
+    - name: Maven publish
+      run: |
+        gradle --no-daemon publish
+      env:
+        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
