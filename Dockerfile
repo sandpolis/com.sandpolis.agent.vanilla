@@ -1,10 +1,12 @@
 FROM adoptopenjdk:15-hotspot
 
-# Set application root directory
+# Set application directory
 WORKDIR /app
 
-# Setup environment
-ENV SANDPOLIS_IPC_MUTEX             "false"
+# Set application entry
+ENTRYPOINT ["java", "-cp", "/app/lib/*", "com.sandpolis.agent.vanilla.Main"]
+
+# Set environment
 ENV SANDPOLIS_NET_CONNECTION_TLS    "true"
 ENV SANDPOLIS_NET_LOGGING_DECODED   "false"
 ENV SANDPOLIS_NET_LOGGING_RAW       "false"
@@ -16,7 +18,4 @@ ENV SANDPOLIS_PLUGINS_ENABLED       "true"
 #ENV JAVA_TOOL_OPTIONS "-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:7000,server=y,suspend=y"
 
 # Install application
-COPY build/docker/lib/ /app/lib
-
-#ENTRYPOINT ["java", "--module-path", "/app/lib", "-m", "com.sandpolis.agent.vanilla/com.sandpolis.agent.vanilla.Main"]
-ENTRYPOINT ["java", "-cp", "/app/lib/*", "com.sandpolis.agent.vanilla.Main"]
+COPY build/docker/lib /app/lib

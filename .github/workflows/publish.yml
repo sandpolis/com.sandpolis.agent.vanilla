@@ -22,7 +22,7 @@ jobs:
         git submodule update --init --remote --merge com.sandpolis.agent.vanilla
     - name: Maven publish
       run: |
-        gradle --no-daemon publish
+        gradle --no-daemon :com.sandpolis.agent.vanilla:publish
       env:
         SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
