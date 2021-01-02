@@ -7,7 +7,6 @@ jobs:
   publish:
     name: Publish release
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     steps:
     - name: Initialize Java
       uses: actions/setup-java@v1

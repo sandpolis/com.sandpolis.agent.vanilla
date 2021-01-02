@@ -111,7 +111,7 @@ public final class Agent {
 			Environment.LIB.set(null);
 			Environment.LOG.set(null);
 			Environment.PLUGIN.set(null);
-			Environment.DB.set(null);
+			Environment.DATA.set(null);
 			Environment.GEN.set(null);
 			Environment.TMP.set(null);
 		} else {
