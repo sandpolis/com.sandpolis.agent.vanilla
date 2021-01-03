@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.eventbus.Subscribe;
 import com.sandpolis.agent.vanilla.cmd.AuthCmd;
+import com.sandpolis.agent.vanilla.config.InteractiveConfig;
 import com.sandpolis.agent.vanilla.exe.AgentExe;
 import com.sandpolis.core.clientagent.cmd.PluginCmd;
 import com.sandpolis.core.foundation.Config;
@@ -94,6 +95,15 @@ public final class Agent {
 	public static void main(String[] args) {
 		printEnvironment(log, "Sandpolis Agent");
 
+		if (Config.CONFIG_MODE.value().orElse(false)) {
+			try {
+				new InteractiveConfig().run();
+				System.exit(0);
+			} catch (IOException e) {
+				System.exit(1);
+			}
+		}
+
 		register(Agent.loadEnvironment);
 		register(Agent.loadStores);
 		register(Agent.loadPlugins);
@@ -107,17 +117,11 @@ public final class Agent {
 	public static final Task loadEnvironment = new Task(outcome -> {
 
 		if (SO_CONFIG.getMemory()) {
-			// TODO actually remove paths
-			Environment.LIB.set(null);
-			Environment.LOG.set(null);
-			Environment.PLUGIN.set(null);
-			Environment.DATA.set(null);
-			Environment.GEN.set(null);
-			Environment.TMP.set(null);
+			Environment.clearEnvironment();
 		} else {
-			Environment.LIB.set(Config.PATH_LIB.value().orElse(null)).requireReadable();
-			Environment.LOG.set(Config.PATH_LOG.value().orElse(null)).requireWritable();
-			Environment.PLUGIN.set(Config.PATH_PLUGIN.value().orElse(null)).requireWritable();
+			Environment.LIB.requireReadable();
+			Environment.LOG.requireWritable();
+			Environment.PLUGIN.requireWritable();
 		}
 		return outcome.success();
 	});
