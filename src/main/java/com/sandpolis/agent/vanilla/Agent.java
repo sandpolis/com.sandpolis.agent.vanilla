@@ -13,6 +13,7 @@ import static com.sandpolis.core.instance.Environment.printEnvironment;
 import static com.sandpolis.core.instance.MainDispatch.register;
 import static com.sandpolis.core.instance.plugin.PluginStore.PluginStore;
 import static com.sandpolis.core.instance.profile.ProfileStore.ProfileStore;
+import static com.sandpolis.core.instance.state.InstanceOid.InstanceOid;
 import static com.sandpolis.core.instance.state.STStore.STStore;
 import static com.sandpolis.core.instance.thread.ThreadStore.ThreadStore;
 import static com.sandpolis.core.net.connection.ConnectionStore.ConnectionStore;
@@ -44,9 +45,7 @@ import com.sandpolis.core.instance.Group.AgentConfig.NetworkTarget;
 import com.sandpolis.core.instance.MainDispatch;
 import com.sandpolis.core.instance.MainDispatch.InitializationTask;
 import com.sandpolis.core.instance.MainDispatch.Task;
-import com.sandpolis.core.instance.profile.Profile;
 import com.sandpolis.core.instance.state.st.ephemeral.EphemeralDocument;
-import com.sandpolis.core.instance.state.vst.VirtCollection;
 import com.sandpolis.core.net.network.NetworkEvents.ServerEstablishedEvent;
 import com.sandpolis.core.net.network.NetworkEvents.ServerLostEvent;
 
@@ -147,11 +146,11 @@ public final class Agent {
 		});
 
 		ProfileStore.init(config -> {
-			config.collection = new VirtCollection<Profile>(STStore.root(), Profile::new);
+			config.collection = STStore.root();
 		});
 
 		PluginStore.init(config -> {
-			config.collection = ProfileStore.getByUuid(Core.UUID).get().plugin();
+			config.collection = STStore.get(InstanceOid().profile(Core.UUID).plugin);
 		});
 
 		StreamStore.init(config -> {
@@ -162,7 +161,7 @@ public final class Agent {
 		});
 
 		ConnectionStore.init(config -> {
-			config.collection = ProfileStore.getByUuid(Core.UUID).get().connection();
+			config.collection = STStore.get(InstanceOid().profile(Core.UUID).connection);
 		});
 
 		NetworkStore.init(config -> {
