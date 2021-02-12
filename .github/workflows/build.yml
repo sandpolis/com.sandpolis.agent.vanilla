@@ -16,13 +16,11 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 15
-    - name: Checkout root repository
+    - name: Checkout repository
       uses: actions/checkout@v2
       with:
-        repository: sandpolis/sandpolis
-    - name: Checkout submodules
-      run: |
-        git submodule update --init --remote --merge com.sandpolis.agent.vanilla
+        repository: sandpolis/com.sandpolis.agent.vanilla
+        submodules: recursive
     - name: Execute build
       run: |
-        gradle --no-daemon :com.sandpolis.agent.vanilla:build -x javadoc
+        gradle --no-daemon :build -x javadoc
