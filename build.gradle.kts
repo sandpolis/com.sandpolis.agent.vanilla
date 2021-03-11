@@ -24,10 +24,14 @@ dependencies {
 	testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.1")
 	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.1")
 
-	implementation(project(":module:com.sandpolis.core.agent"))
-
 	// https://github.com/javaee/jpa-spec
 	implementation("javax.persistence:javax.persistence-api:2.2")
+
+	if (project.getParent() == null) {
+		implementation("com.sandpolis:core.agent:0.1.0")
+	} else {
+		implementation(project(":module:com.sandpolis.core.agent"))
+	}
 }
 
 task<Sync>("assembleLib") {
