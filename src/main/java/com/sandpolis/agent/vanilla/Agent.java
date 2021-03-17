@@ -96,7 +96,7 @@ public final class Agent {
 
 		if (Config.CONFIG_MODE.value().orElse(false)) {
 			try {
-				new InteractiveConfig().run();
+				new ConfigPrompter().run();
 				System.exit(0);
 			} catch (IOException e) {
 				System.exit(1);
