@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.eventbus.Subscribe;
 import com.sandpolis.agent.vanilla.cmd.AuthCmd;
-import com.sandpolis.agent.vanilla.config.InteractiveConfig;
 import com.sandpolis.agent.vanilla.exe.AgentExe;
 import com.sandpolis.core.clientagent.cmd.PluginCmd;
 import com.sandpolis.core.foundation.Config;

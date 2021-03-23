@@ -9,11 +9,3 @@
 //============================================================================//
 
 rootProject.name = "com.sandpolis.agent.vanilla"
-
-// Core modules
-include("module:com.sandpolis.core.agent")
-include("module:com.sandpolis.core.clientagent")
-include("module:com.sandpolis.core.foundation")
-include("module:com.sandpolis.core.instance")
-include("module:com.sandpolis.core.net")
-include("module:com.sandpolis.core.serveragent")

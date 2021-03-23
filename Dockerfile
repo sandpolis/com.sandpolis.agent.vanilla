@@ -4,7 +4,7 @@ FROM adoptopenjdk:16-hotspot
 WORKDIR /app
 
 # Set application entry
-ENTRYPOINT ["java", "--enable-preview", "-cp", "/app/lib/*", "com.sandpolis.agent.vanilla.Main"]
+ENTRYPOINT ["java", "-cp", "/app/lib/*", "com.sandpolis.agent.vanilla.Main"]
 
 # Set environment
 ENV SANDPOLIS_NET_CONNECTION_TLS    "true"

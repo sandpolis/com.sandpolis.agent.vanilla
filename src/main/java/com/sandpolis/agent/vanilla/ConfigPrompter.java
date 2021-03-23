@@ -9,6 +9,8 @@
 //============================================================================//
 package com.sandpolis.agent.vanilla;
 
+import static com.sandpolis.core.net.connection.ConnectionStore.ConnectionStore;
+
 import java.io.Console;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,6 +18,9 @@ import java.util.Properties;
 import java.util.function.Predicate;
 
 import com.sandpolis.agent.vanilla.cmd.AuthCmd;
+import com.sandpolis.core.foundation.util.ValidationUtil;
+import com.sandpolis.core.instance.Environment;
+import com.sandpolis.core.net.connection.Connection;
 
 /**
  * Obtain the configuration from the user via the terminal.
@@ -78,14 +83,15 @@ public final class ConfigPrompter {
 		config.setProperty("", server + ":" + port);
 
 		// Attempt connection
+		Connection connection;
 		try {
 			connection = ConnectionStore.connect(server, port).get();
 		} catch (Exception e) {
-
+			throw new RuntimeException();
 		}
 
 		// Retrieve banner
-		var banner = ServerCmd.async().target(connection).getBanner().toCompletableFuture().join();
+		//var banner = ServerCmd.async().target(connection).getBanner().toCompletableFuture().join();
 
 		boolean configuredAuthentication = false;
 
