@@ -16,20 +16,21 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 16
-    - name: Checkout root repository
+    - name: Checkout repository
       uses: actions/checkout@v2
       with:
-        repository: sandpolis/sandpolis
-    - name: Checkout submodules
-      run: |
-        git submodule update --init --remote --merge com.sandpolis.agent.vanilla
+        submodules: recursive
     - name: Initialize QEMU
       uses: docker/setup-qemu-action@v1
     - name: Initialize buildx
       uses: docker/setup-buildx-action@v1
     - name: Prepare Docker build
-      run: |
-        gradle --no-daemon :com.sandpolis.agent.vanilla:assembleLib
+      uses: eskatos/gradle-command-action@v1
+      with:
+        arguments: assembleLib --no-daemon
+      env:
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_TOKEN: ${{ github.token }}
     - name: DockerHub login
       uses: docker/login-action@v1
       with:
@@ -38,16 +39,18 @@ jobs:
     - name: DockerHub publish
       uses: docker/build-push-action@v2
       with:
-        context: com.sandpolis.agent.vanilla
-        file: com.sandpolis.agent.vanilla/Dockerfile
         platforms: linux/amd64,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/s390x
+        context: .
         push: true
         tags: |
-          sandpolis/agent:latest
-          sandpolis/agent:${{ steps.get_version.outputs.version }}
-    - name: Maven publish
-      run: |
-        gradle --no-daemon :com.sandpolis.agent.vanilla:publish
+          sandpolis/server:latest
+          sandpolis/server:${{ steps.get_version.outputs.version }}
+    - name: Publish release
+      uses: eskatos/gradle-command-action@v1
+      with:
+        arguments: publish --no-daemon
       env:
-        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        SIGNING_PGP_KEY: ${{ secrets.SIGNING_PGP_KEY }}
+        SIGNING_PGP_PASSWORD: ${{ secrets.SIGNING_PGP_PASSWORD }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_TOKEN: ${{ github.token }}
