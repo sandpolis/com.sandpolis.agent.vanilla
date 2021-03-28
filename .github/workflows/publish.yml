@@ -43,8 +43,8 @@ jobs:
         context: .
         push: true
         tags: |
-          sandpolis/server:latest
-          sandpolis/server:${{ steps.get_version.outputs.version }}
+          sandpolis/agent:latest
+          sandpolis/agent:${{ steps.get_version.outputs.version }}
     - name: Publish release
       uses: eskatos/gradle-command-action@v1
       with:
