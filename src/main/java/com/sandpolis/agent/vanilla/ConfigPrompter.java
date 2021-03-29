@@ -15,9 +15,11 @@ import java.io.Console;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
 import com.sandpolis.agent.vanilla.cmd.AuthCmd;
+import com.sandpolis.core.agent.config.CfgAgent;
 import com.sandpolis.core.foundation.util.ValidationUtil;
 import com.sandpolis.core.instance.Environment;
 import com.sandpolis.core.net.connection.Connection;
@@ -42,21 +44,21 @@ public final class ConfigPrompter {
 
 	public void run() throws IOException {
 
+		// Check for TTY
 		if (console == null) {
-			throw new RuntimeException();
+			throw new RuntimeException("No console attached");
 		}
 
 		Properties config = new Properties();
 
-		console.format("Preparing to configure agent%n");
-
 		// Ask server address
-		var server = prompt("Enter server address: ", "127.0.0.1", answer -> {
+		var server = prompt("Enter server address", "127.0.0.1", answer -> {
+
 			var components = answer.split(":");
 			if (components.length == 2) {
 				// Check the explicit port
 				if (!ValidationUtil.port(components[1])) {
-					console.format("Invalid port: %s%n", components[1]);
+					console.format("Invalid port: '%s'%n", components[1]);
 					return false;
 				}
 			} else if (components.length != 1) {
@@ -80,56 +82,82 @@ public final class ConfigPrompter {
 			server = server.substring(0, server.indexOf(':'));
 		}
 
-		config.setProperty("", server + ":" + port);
+		config.setProperty(CfgAgent.SERVER_ADDRESS.property(), server + ":" + port);
 
 		// Attempt connection
 		Connection connection;
 		try {
 			connection = ConnectionStore.connect(server, port).get();
 		} catch (Exception e) {
-			throw new RuntimeException();
+			connection = null;
 		}
 
 		// Retrieve banner
-		//var banner = ServerCmd.async().target(connection).getBanner().toCompletableFuture().join();
+		// var banner =
+		// ServerCmd.async().target(connection).getBanner().toCompletableFuture().join();
 
 		boolean configuredAuthentication = false;
 
-		// Attempt authentication via client certificates first
+		// Attempt authentication via client certificates
 		if (!configuredAuthentication && prompt("Configure client certificate authentication?", false)) {
-
+			configuredAuthentication = true;
+			// TODO
 		}
 
-		// Attempt authentication via password next
+		// Attempt authentication via password
 		if (!configuredAuthentication && prompt("Configure password authentication?", false)) {
-			var password = prompt("Enter password: ", "", answer -> {
-				if (answer.length() < 5) {
-					console.format("Password too short%n");
-					return false;
+
+			while (true) {
+				var password = prompt("Enter password", "", answer -> {
+					if (answer.length() < 5) {
+						console.format("Password too short%n");
+						return false;
+					}
+					return true;
+				});
+				config.setProperty("", password);
+
+				if (connection != null) {
+					try {
+						if (!AuthCmd.async().target(connection).password(password).toCompletableFuture().get()
+								.getResult()) {
+							continue;
+						}
+					} catch (InterruptedException | ExecutionException e) {
+						;
+					}
 				}
-				return true;
-			});
 
-			AuthCmd.async().target(connection).password(password);
+				configuredAuthentication = true;
+				break;
+			}
 
-			config.setProperty("", password);
 		}
 
-		// No authentication
+		// Attempt "no authentication"
 		if (!configuredAuthentication) {
-			console.format("Warning: no authentication will be used (be careful)");
-			AuthCmd.async().target(connection).none();
+			console.format("Warning: no authentication will be used (be careful)%n");
+			if (connection != null) {
+				try {
+					if (!AuthCmd.async().target(connection).none().toCompletableFuture().get().getResult()) {
+						console.format("Error: failed to authenticate%n");
+					}
+				} catch (InterruptedException | ExecutionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 
 		// Store configuration
-		try (var out = Files.newOutputStream(Environment.CFG.path().resolve("config.properties"))) {
+		try (var out = Files.newOutputStream(Environment.CFG.path().resolve("instance.properties"))) {
 			config.store(out, null);
 		}
 	}
 
 	/**
 	 * Prompt for a yes/no answer.
-	 * 
+	 *
 	 * @param prompt        The prompt to show
 	 * @param defaultAnswer The default answer
 	 * @return The answer
@@ -148,7 +176,7 @@ public final class ConfigPrompter {
 
 	/**
 	 * Prompt for an answer.
-	 * 
+	 *
 	 * @param prompt        The prompt to show
 	 * @param defaultAnswer The default answer
 	 * @param validator     A predicate that determines whether the answer is valid
@@ -157,13 +185,13 @@ public final class ConfigPrompter {
 	private synchronized String prompt(String prompt, String defaultAnswer, Predicate<String> validator) {
 		String value;
 		do {
-			console.format("%s [%s]%n", prompt, defaultAnswer);
+			console.format("%n%s [%s]: ", prompt, defaultAnswer);
 			value = console.readLine();
-		} while (validator.test(prompt));
+			if (value.isEmpty()) {
+				return defaultAnswer;
+			}
+		} while (!validator.test(value));
 
-		if (value.isEmpty()) {
-			return defaultAnswer;
-		}
 		return value;
 	}
 }

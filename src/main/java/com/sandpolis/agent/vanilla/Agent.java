@@ -22,6 +22,7 @@ import static com.sandpolis.core.net.network.NetworkStore.NetworkStore;
 import static com.sandpolis.core.net.stream.StreamStore.StreamStore;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
@@ -32,10 +33,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.eventbus.Subscribe;
 import com.sandpolis.agent.vanilla.cmd.AuthCmd;
 import com.sandpolis.agent.vanilla.exe.AgentExe;
+import com.sandpolis.core.agent.config.CfgAgent;
 import com.sandpolis.core.clientagent.cmd.PluginCmd;
-import com.sandpolis.core.foundation.Config;
 import com.sandpolis.core.foundation.Platform.OsType;
 import com.sandpolis.core.foundation.Result.Outcome;
+import com.sandpolis.core.foundation.config.CfgFoundation;
 import com.sandpolis.core.instance.Core;
 import com.sandpolis.core.instance.Environment;
 import com.sandpolis.core.instance.Group.AgentConfig;
@@ -44,6 +46,7 @@ import com.sandpolis.core.instance.Group.AgentConfig.NetworkTarget;
 import com.sandpolis.core.instance.MainDispatch;
 import com.sandpolis.core.instance.MainDispatch.InitializationTask;
 import com.sandpolis.core.instance.MainDispatch.Task;
+import com.sandpolis.core.instance.config.CfgInstance;
 import com.sandpolis.core.instance.state.st.ephemeral.EphemeralDocument;
 import com.sandpolis.core.net.network.NetworkEvents.ServerEstablishedEvent;
 import com.sandpolis.core.net.network.NetworkEvents.ServerLostEvent;
@@ -60,53 +63,52 @@ public final class Agent {
 
 	private static final Logger log = LoggerFactory.getLogger(Agent.class);
 
-	/**
-	 * The configuration included in the instance jar.
-	 */
-	public static final AgentConfig SO_CONFIG;
-
-	static {
-		try (var in = Agent.class.getResourceAsStream("/soi/agent.bin")) {
-			if (in != null) {
-				SO_CONFIG = AgentConfig.parseFrom(in);
-			} else {
-				// Set debug configuration
-				SO_CONFIG = AgentConfig.newBuilder().setMemory(false)
-
-						// Add standard plugins
-						.addPlugin("com.sandpolis.plugin.desktop").addPlugin("com.sandpolis.plugin.filesys")
-						.addPlugin("com.sandpolis.plugin.sysinfo").addPlugin("com.sandpolis.plugin.shell")
-
-						// Add installation path
-						.putInstallPath(OsType.LINUX_VALUE, "/home/cilki/.sandpolis")
-
-						// Add connection loop configuration
-						.setLoopConfig(LoopConfig.newBuilder().setTimeout(5000).setCooldown(5000)
-								.addTarget(NetworkTarget.newBuilder().setAddress("172.17.0.1").setPort(8768)))
-						.build();
-			}
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to read SO_CONFIG!", e);
-		}
-	}
-
 	public static void main(String[] args) {
 		printEnvironment(log, "Sandpolis Agent");
 
-		if (Config.CONFIG_MODE.value().orElse(false)) {
-			try {
-				new ConfigPrompter().run();
-				System.exit(0);
-			} catch (IOException e) {
-				System.exit(1);
-			}
-		}
-
 		register(Agent.loadEnvironment);
+		register(Agent.loadConfiguration);
 		register(Agent.loadStores);
 		register(Agent.loadPlugins);
 		register(Agent.beginConnectionRoutine);
 	}
+
+	/**
+	 * Load the instance's configuration.
+	 */
+	@InitializationTask(name = "Load agent configuration", fatal = true)
+	public static final Task loadConfiguration = new Task(outcome -> {
+
+		CfgInstance.PATH_LIB.register();
+		CfgInstance.PATH_LOG.register();
+		CfgInstance.PATH_PLUGIN.register();
+		CfgInstance.PATH_TMP.register();
+		CfgInstance.PATH_DATA.register();
+		CfgInstance.PATH_CFG.register();
+
+		CfgInstance.PLUGIN_ENABLED.register(true);
+
+		if (CfgFoundation.DEVELOPMENT_MODE.value().orElse(false)) {
+			CfgAgent.SERVER_ADDRESS.register("172.17.0.1");
+			CfgAgent.SERVER_COOLDOWN.register(5000);
+			CfgAgent.SERVER_TIMEOUT.register(5000);
+		} else {
+
+			// Check for configuration
+			if (!Files.exists(Environment.CFG.path().resolve("config.properties"))) {
+				log.info("Requesting configuration via user input");
+				try {
+					new ConfigPrompter().run();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
+			CfgAgent.SERVER_ADDRESS.require();
+		}
+
+		return outcome.success();
+	});
 
 	/**
 	 * Load the runtime environment.
@@ -114,13 +116,11 @@ public final class Agent {
 	@InitializationTask(name = "Load runtime environment", fatal = true)
 	public static final Task loadEnvironment = new Task(outcome -> {
 
-		if (SO_CONFIG.getMemory()) {
-			Environment.clearEnvironment();
-		} else {
-			Environment.LIB.requireReadable();
-			Environment.LOG.requireWritable();
-			Environment.PLUGIN.requireWritable();
-		}
+		Environment.LIB.requireReadable();
+		Environment.LOG.requireWritable();
+		Environment.CFG.requireWritable();
+		Environment.PLUGIN.requireWritable();
+
 		return outcome.success();
 	});
 
@@ -176,9 +176,9 @@ public final class Agent {
 			private void onSrvEstablished(ServerEstablishedEvent event) {
 				CompletionStage<Outcome> future;
 
-				switch (SO_CONFIG.getAuthenticationCase()) {
-				case PASSWORD:
-					future = AuthCmd.async().target(event.get()).password(SO_CONFIG.getPassword().getPassword());
+				switch (CfgAgent.AUTH_TYPE.value().get()) {
+				case "password":
+					future = AuthCmd.async().target(event.get()).password(CfgAgent.AUTH_PASSWORD.value().get());
 					break;
 				default:
 					future = AuthCmd.async().target(event.get()).none();
@@ -195,7 +195,7 @@ public final class Agent {
 					return rs;
 				});
 
-				if (Config.PLUGIN_ENABLED.value().orElse(true) && !SO_CONFIG.getMemory()) {
+				if (CfgInstance.PLUGIN_ENABLED.value().orElse(true)) {
 					future.thenAccept(rs -> {
 						if (rs.getResult()) {
 							// Synchronize plugins
@@ -209,12 +209,9 @@ public final class Agent {
 		return outcome.success();
 	});
 
-	/**
-	 * Load plugins.
-	 */
 	@InitializationTask(name = "Load plugins")
 	public static final Task loadPlugins = new Task(outcome -> {
-		if (!Config.PLUGIN_ENABLED.value().orElse(true))
+		if (!CfgInstance.PLUGIN_ENABLED.value().orElse(true))
 			return outcome.skipped();
 
 		PluginStore.scanPluginDirectory();
@@ -223,9 +220,6 @@ public final class Agent {
 		return outcome.success();
 	});
 
-	/**
-	 * Begin the connection routine.
-	 */
 	@InitializationTask(name = "Begin the connection routine", fatal = true)
 	public static final Task beginConnectionRoutine = new Task(outcome -> {
 		ConnectionStore.connect(SO_CONFIG.getLoopConfig()).future().addListener(future -> {

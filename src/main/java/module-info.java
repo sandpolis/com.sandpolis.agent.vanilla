@@ -15,6 +15,7 @@ open module com.sandpolis.agent.vanilla {
 	requires com.sandpolis.core.instance;
 	requires com.sandpolis.core.net;
 	requires com.sandpolis.core.serveragent;
+	requires com.sandpolis.core.agent;
 	requires io.netty.common;
 	requires io.netty.transport;
 	requires org.slf4j;
