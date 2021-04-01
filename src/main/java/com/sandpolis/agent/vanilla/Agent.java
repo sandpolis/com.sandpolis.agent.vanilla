@@ -48,9 +48,11 @@ import com.sandpolis.core.instance.MainDispatch.InitializationTask;
 import com.sandpolis.core.instance.MainDispatch.Task;
 import com.sandpolis.core.instance.config.CfgInstance;
 import com.sandpolis.core.instance.state.st.ephemeral.EphemeralDocument;
+import com.sandpolis.core.net.channel.client.ClientChannelInitializer;
 import com.sandpolis.core.net.network.NetworkEvents.ServerEstablishedEvent;
 import com.sandpolis.core.net.network.NetworkEvents.ServerLostEvent;
 
+import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 
@@ -169,14 +171,20 @@ public final class Agent {
 		NetworkStore.register(new Object() {
 			@Subscribe
 			private void onSrvLost(ServerLostEvent event) {
-				ConnectionStore.connect(SO_CONFIG.getLoopConfig());
+				ConnectionStore.connect(config -> {
+					config.address(CfgAgent.SERVER_ADDRESS.value().get());
+					config.timeout = CfgAgent.SERVER_TIMEOUT.value().orElse(1000);
+					config.bootstrap.handler(new ClientChannelInitializer(struct -> {
+						struct.clientTlsInsecure();
+					}));
+				});
 			}
 
 			@Subscribe
 			private void onSrvEstablished(ServerEstablishedEvent event) {
 				CompletionStage<Outcome> future;
 
-				switch (CfgAgent.AUTH_TYPE.value().get()) {
+				switch (CfgAgent.AUTH_TYPE.value().orElse("none")) {
 				case "password":
 					future = AuthCmd.async().target(event.get()).password(CfgAgent.AUTH_PASSWORD.value().get());
 					break;
@@ -222,10 +230,12 @@ public final class Agent {
 
 	@InitializationTask(name = "Begin the connection routine", fatal = true)
 	public static final Task beginConnectionRoutine = new Task(outcome -> {
-		ConnectionStore.connect(SO_CONFIG.getLoopConfig()).future().addListener(future -> {
-			if (!future.isSuccess()) {
-				log.error("Connection loop failed to start", future.cause());
-			}
+		ConnectionStore.connect(config -> {
+			config.address(CfgAgent.SERVER_ADDRESS.value().get());
+			config.timeout = CfgAgent.SERVER_TIMEOUT.value().orElse(1000);
+			config.bootstrap.handler(new ClientChannelInitializer(struct -> {
+				struct.clientTlsInsecure();
+			}));
 		});
 
 		return outcome.success();
