@@ -9,21 +9,31 @@
 //============================================================================//
 package com.sandpolis.agent.vanilla;
 
-import com.sandpolis.core.instance.MainDispatch;
+import com.sandpolis.core.agent.init.AgentConnectionRoutine;
+import com.sandpolis.core.agent.init.AgentLoadConfiguration;
+import com.sandpolis.core.agent.init.AgentLoadStores;
+import com.sandpolis.core.instance.Entrypoint;
 import com.sandpolis.core.instance.Metatypes.InstanceFlavor;
 import com.sandpolis.core.instance.Metatypes.InstanceType;
+import com.sandpolis.core.instance.init.InstanceLoadEnvironment;
+import com.sandpolis.core.instance.init.InstanceLoadPlugins;
 
-/**
- * {@code com.sandpolis.agent.vanilla} entry point.
- *
- * @since 5.0.0
- */
-public final class Main {
-	private Main() {
+public final class Main extends Entrypoint {
+
+	private Main(String[] args) {
+		super(Main.class, InstanceType.AGENT, InstanceFlavor.VANILLA);
+
+		register(new InstanceLoadEnvironment());
+		register(new AgentLoadConfiguration());
+		register(new AgentLoadStores());
+		register(new InstanceLoadPlugins());
+		register(new AgentConnectionRoutine());
+
+		start("Sandpolis Agent", args);
 	}
 
 	public static void main(String[] args) {
-		MainDispatch.dispatch(Agent.class, args, InstanceType.AGENT, InstanceFlavor.VANILLA);
+		new Main(args);
 	}
 
 }
