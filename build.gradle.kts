@@ -28,7 +28,7 @@ dependencies {
 	implementation("javax.persistence:javax.persistence-api:2.2")
 
 	if (project.getParent() == null) {
-		implementation("com.sandpolis:core.agent:0.1.0")
+		implementation("com.sandpolis:core.agent:0.1.1")
 		implementation("com.sandpolis:core.net:0.2.0")
 		implementation("com.sandpolis:core.instance:0.2.0")
 	} else {
