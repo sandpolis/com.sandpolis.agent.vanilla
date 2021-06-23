@@ -21,16 +21,13 @@ plugins {
 }
 
 dependencies {
-	testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.1")
-	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.1")
-
-	// https://github.com/javaee/jpa-spec
-	implementation("javax.persistence:javax.persistence-api:2.2")
+	testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
+	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.2")
 
 	if (project.getParent() == null) {
-		implementation("com.sandpolis:core.agent:0.1.1")
-		implementation("com.sandpolis:core.net:0.2.0")
-		implementation("com.sandpolis:core.instance:0.2.0")
+		implementation("com.sandpolis:core.agent:+")
+		implementation("com.sandpolis:core.net:+")
+		implementation("com.sandpolis:core.instance:+")
 	} else {
 		implementation(project(":module:com.sandpolis.core.agent"))
 		implementation(project(":module:com.sandpolis.core.net"))
