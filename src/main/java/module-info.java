@@ -19,4 +19,6 @@ open module com.sandpolis.agent.vanilla {
 	requires io.netty.common;
 	requires io.netty.transport;
 	requires org.slf4j;
+
+	requires jdk.unsupported;
 }
