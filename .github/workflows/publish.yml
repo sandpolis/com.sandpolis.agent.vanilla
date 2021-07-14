@@ -61,15 +61,15 @@ jobs:
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
         repository: sandpolis/agent
 
-    - name: Publish release
-      uses: eskatos/gradle-command-action@v1
-      with:
-        arguments: publish --no-daemon
-      env:
-        SIGNING_PGP_KEY: ${{ secrets.SIGNING_PGP_KEY }}
-        SIGNING_PGP_PASSWORD: ${{ secrets.SIGNING_PGP_PASSWORD }}
-        GITHUB_ACTOR: ${{ github.actor }}
-        GITHUB_TOKEN: ${{ github.token }}
+    #- name: Publish release
+    #  uses: eskatos/gradle-command-action@v1
+    #  with:
+    #    arguments: publish --no-daemon
+    #  env:
+    #    SIGNING_PGP_KEY: ${{ secrets.SIGNING_PGP_KEY }}
+    #    SIGNING_PGP_PASSWORD: ${{ secrets.SIGNING_PGP_PASSWORD }}
+    #    GITHUB_ACTOR: ${{ github.actor }}
+    #    GITHUB_TOKEN: ${{ github.token }}
 
   publish-windows:
     name: Publish release (Windows)
