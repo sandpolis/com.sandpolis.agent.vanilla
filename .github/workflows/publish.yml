@@ -113,5 +113,5 @@ jobs:
       run: |
         docker build -t sandpolis/agent:windows-latest -t sandpolis/agent:windows-${{ steps.get_version.outputs.tag }} .
         docker push sandpolis/agent --all-tags
-        docker buildx imagetools create --append -t sandpolis/agent:latest sandpolis/agent:windows-latest
+        docker buildx imagetools create --append -t sandpolis/agent:latest sandpolis/agent:latest sandpolis/agent:windows-latest
         docker manifest push sandpolis/agent:latest
