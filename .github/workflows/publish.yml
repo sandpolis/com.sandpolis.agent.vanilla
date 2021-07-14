@@ -9,9 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Extract version from tag
+      uses: olegtarasov/get-tag@v2.1
       id: get_version
-      run: |
-        echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
+      with:
+        tagRegex: 'v(.*)'
 
     - name: Initialize Java
       uses: actions/setup-java@v1
@@ -51,7 +52,7 @@ jobs:
         push: true
         tags: |
           sandpolis/agent:latest
-          sandpolis/agent:${{ steps.get_version.outputs.version }}
+          sandpolis/agent:${{ steps.get_version.outputs.tag }}
 
     - name: Update DockerHub Readme
       uses: peter-evans/dockerhub-description@v2
@@ -75,9 +76,10 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Extract version from tag
+      uses: olegtarasov/get-tag@v2.1
       id: get_version
-      run: |
-        echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
+      with:
+        tagRegex: 'v(.*)'
 
     - name: Initialize Java
       uses: actions/setup-java@v1
@@ -105,5 +107,5 @@ jobs:
 
     - name: DockerHub publish
       run: |
-        docker build -t sandpolis/agent:latest -t sandpolis/agent:${{ steps.get_version.outputs.version }} .
+        docker build -t sandpolis/agent:latest -t sandpolis/agent:${{ steps.get_version.outputs.tag }} .
         docker push sandpolis/agent --all-tags
